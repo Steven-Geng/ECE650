@@ -1,10 +1,4 @@
 #include "my_malloc.h"
-#include <stdio.h>
-#include <stdlib.h>
-
-static mem_block_t * freemem_list_head = NULL;
-static unsigned long heap_size = 0;
-static unsigned long free_list_size = 0;
 
 // this function remove a region from the linked list of free memory regions
 void remove_from_freemem_list(mem_block_t * freemem_ptr){
