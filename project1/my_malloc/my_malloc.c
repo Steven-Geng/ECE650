@@ -199,7 +199,11 @@ void * bf_malloc(size_t size){
     allocated_addr = allocate(best_fit_ptr, size);
   }
   else{
-    newspace_ptr = sbrk(actual_alloc_size); // system page size
+    newspace_ptr = sbrk(actual_alloc_size);
+    if(newspace_ptr == (void*) -1){
+      printf("sbrk() failed!\n");
+      exit(EXIT_FAILURE);
+    }
     newspace_ptr->size = size;
     newspace_ptr->next = NULL;
     newspace_ptr->prev = NULL;
