@@ -15,6 +15,7 @@ mem_block_t * freemem_list_head = NULL;
 unsigned long heap_size = 0;
 unsigned long free_list_size = 0;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+__thread mem_block_t * free_list_head = NULL;
 
 // Helper functions
 void remove_from_freemem_list(mem_block_t * freemem_ptr);
@@ -29,6 +30,10 @@ void bf_free(void *ptr);
 // Thread Safe malloc/free: locking version
 void *ts_malloc_lock(size_t size);
 void ts_free_lock(void *ptr);
+
+// Thread Safe malloc/free: unlocking version
+void * ts_malloc_nolock(size_t size);
+void ts_free_nolock(void * ptr);
 
 // performance study
 unsigned long get_data_segment_size();

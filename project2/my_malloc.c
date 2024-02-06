@@ -201,6 +201,61 @@ void ts_free_lock(void * ptr){
   pthread_mutex_unlock(&lock);
 }
 
+void * ts_malloc_nolock(size_t size){
+  void * allocated_addr; // the ptr we return
+  mem_block_t * freemem_list_ptr = free_list_head; // ptr to list of free memory regions
+  size_t actual_alloc_size = size + sizeof(mem_block_t); // the actual allocated size (block size + header size)
+  mem_block_t * newspace_ptr; // ptr to space created by sbrk()
+  mem_block_t * best_fit_ptr = NULL;
+  while(freemem_list_ptr){ // when there are memory can be allocated
+    if(freemem_list_ptr->size == size){
+      allocated_addr = Allocate(freemem_list_ptr, size);
+      return allocated_addr;
+    }
+    else if(freemem_list_ptr->size > size){
+      if(best_fit_ptr == NULL){
+	best_fit_ptr = freemem_list_ptr;
+	freemem_list_ptr = freemem_list_ptr->next;
+	continue;
+      }
+      else{
+	if(freemem_list_ptr->size < best_fit_ptr->size){
+	  best_fit_ptr = freemem_list_ptr;
+	  freemem_list_ptr = freemem_list_ptr->next;
+	  continue;
+	}
+	else{
+	  freemem_list_ptr = freemem_list_ptr->next;
+	}
+      }
+    }
+    else{
+      freemem_list_ptr = freemem_list_ptr->next;
+    }
+  }
+  if(best_fit_ptr != NULL){
+    allocated_addr = Allocate(best_fit_ptr, size);
+  }
+  else{
+    pthread_mutex_lock(&lock);
+    newspace_ptr = sbrk(actual_alloc_size);
+    pthread_mutex_unlock(&lock);
+    if(newspace_ptr == (void*) -1){
+      printf("sbrk() failed!\n");
+      exit(EXIT_FAILURE);
+    }
+    newspace_ptr->size = size;
+    newspace_ptr->next = NULL;
+    newspace_ptr->prev = NULL;
+    heap_size += actual_alloc_size;
+    allocated_addr = (void*)newspace_ptr + sizeof(mem_block_t);
+  }
+  return allocated_addr;
+}
+
+void ts_free_nolock(void * ptr){
+  bf_free(ptr);
+}
 /*
 int main(int argc, char * argv[]) {
   int *dynamicIntArray0 = ff_malloc(4*sizeof(int));
