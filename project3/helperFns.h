@@ -7,6 +7,7 @@
 #include <map>
 #include <arpa/inet.h>
 #include <ctime>
+#include <cstdio>
 
 int setupServer(const char * port, int numberOfPlayers){
     int socket_fd;

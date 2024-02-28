@@ -3,6 +3,8 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <cstdio>
+#include <sstream>
 #include "player.h"
 #include "helperFns.h"
 
@@ -12,10 +14,23 @@ Player::Player(const char * hostname_, const char * hostport_):
 Player::~Player(){
     close(socket_fd_master);
     close(socket_fd_right);
+    close(socket_fd_left);
+    close(socket_fd_self);
 }
 
 void Player::connectToRingMaster(){
     socket_fd_master = connectToServer(hostname, hostport);
+    char hostname_[256];
+    char * playerIpAddr;
+    memset(&hostname_, 0, sizeof(hostname_));
+    gethostname(hostname_, sizeof(hostname_));
+    struct hostent* hostInfo = gethostbyname(hostname_);
+    if(hostInfo != NULL){
+      struct in_addr address;
+      memcpy(&address, hostInfo->h_addr_list[0], sizeof(struct in_addr));
+      playerIpAddr = inet_ntoa(address);
+      send(socket_fd_master, playerIpAddr, strlen(playerIpAddr)+1, 0);
+    }
 }
 
 void Player::recvConnectionInfo(){
@@ -59,9 +74,12 @@ void Player::recvRightNeighborPortInfo(){
 }
 
 void Player::connectToRightPlayer(){
-    std::string rightPortString = std::to_string(rightPlayerPort);
-    const char * rightPort = rightPortString.c_str();
-    socket_fd_right = connectToServer(rightPlayerIp.c_str(), rightPort);
+  std::stringstream ss;
+  ss << rightPlayerPort;
+  std::string rightPortString = ss.str();
+  //std::string rightPortString = std::to_string(rightPlayerPort);
+  const char * rightPort = rightPortString.c_str();
+  socket_fd_right = connectToServer(rightPlayerIp.c_str(), rightPort);
 }
 
 void Player::connectWithLeftPlayer(){
@@ -86,7 +104,7 @@ void Player::recvOneInfo(Potato & potato){
     }
     for(size_t i = 0; i < portsToListen.size(); i++){
         if(FD_ISSET(portsToListen[i], &read_fds)){
-            //std::cout << "recv from: " << portsToListen[i] << std::endl;
+            std::cout << "recv from: " << portsToListen[i] << std::endl;
             recv(portsToListen[i], &potato, sizeof(potato), MSG_WAITALL);
             break;
         }
@@ -97,12 +115,8 @@ void Player::doTheGame(Potato & potato){
     while(true){
         recvOneInfo(potato);
         // recv endgame msg from master
-        if(potato.getRemainingHop() == 0){
-            close(socket_fd_left);
-            close(socket_fd_master);
-            close(socket_fd_right);
-            close(socket_fd_self);
-            return;
+        if(potato.getRemainingHop() == -1){
+	        return;
         }
         // recv potato from neighbor
         //std::cout << "remaining after decreasing: " << potato.getRemainingHop() << std::endl;
@@ -114,17 +128,21 @@ void Player::doTheGame(Potato & potato){
         if(potato.getRemainingHop() == 0){
             std::cout << "I'm it" << std::endl;
             send(socket_fd_master, &potato, sizeof(potato), 0);
+            continue;
         }
         // continue pass potato
         else{
             int randomNeighbor = generateRandomNumber(2, potato.getCurrHop());
+            //std::cout << "neighbor: " << randomNeighbor << std::endl;
             if(randomNeighbor == 0){
                 std::cout << "Sending potato to " << leftPlayerId << std::endl;
                 send(socket_fd_left, &potato, sizeof(potato), 0);
+                continue;
             }
             else{
                 std::cout << "Sending potato to " << rightPlayerId << std::endl;
                 send(socket_fd_right, &potato, sizeof(potato), 0);
+                continue;
             }
         }
     }

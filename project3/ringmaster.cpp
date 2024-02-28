@@ -2,7 +2,7 @@
 #include "helperFns.h"
 
 RingMaster::RingMaster(const char * port_, int numberOfPlayers_, int numberOfHops_):
-    numberOfPlayers(numberOfPlayers_), numberOfHops(numberOfHops_), hostname(nullptr), port(port_), 
+    numberOfPlayers(numberOfPlayers_), numberOfHops(numberOfHops_), hostname(NULL), port(port_), 
     playerSocketInfo(std::map<int, int>()), playerIpInfo(std::map<int, std::string>()){
         std::cout << "Potato Ringmaster" << std::endl;
         std::cout << "Players = " << numberOfPlayers_ << std::endl;
@@ -31,6 +31,10 @@ void RingMaster::connectWithPlayers(){
         playerSocketInfo.insert(std::make_pair(currId, playerSocket));
         // get player ip address
         char playerIpAddr[INET6_ADDRSTRLEN];
+	recv(playerSocket, &playerIpAddr, sizeof(playerIpAddr), 0);
+	std::string playerIp = playerIpAddr;
+        playerIpInfo.insert(std::make_pair(currId, playerIp));
+	/*
         if(socket_addr.ss_family == AF_INET){
             inet_ntop(socket_addr.ss_family, &(((struct sockaddr_in*)&socket_addr)->sin_addr), playerIpAddr, INET6_ADDRSTRLEN);
         }
@@ -38,18 +42,7 @@ void RingMaster::connectWithPlayers(){
             inet_ntop(socket_addr.ss_family, &(((struct sockaddr_in6*)&socket_addr)->sin6_addr), playerIpAddr, INET6_ADDRSTRLEN);
         }
         std::string playerIp = playerIpAddr;
-        playerIpInfo.insert(std::make_pair(currId, playerIp));
-        // get player port number
-        /*
-        unsigned int playerPort;
-        if (socket_addr.ss_family == AF_INET) {
-            playerPort = ntohs(((struct sockaddr_in*)&socket_addr)->sin_port);
-        } 
-        else {
-            playerPort = ntohs(((struct sockaddr_in6*)&socket_addr)->sin6_port);
-        }
-        playerPortInfo.insert(std::make_pair(currId, playerPort));
-        std::cout << "Check storage: " << playerPortInfo[currId] << std::endl;*/
+        playerIpInfo.insert(std::make_pair(currId, playerIp));*/
     }
         
 }
@@ -140,6 +133,7 @@ void RingMaster::waitForPotatoToComeBack(Potato & potato){
 }
 
 void RingMaster::endTheGame(Potato & potato){
+    potato.decreaseHops();
     for(int currId = 0; currId < numberOfPlayers; currId++){
         send(playerSocketInfo[currId], &potato, sizeof(potato), 0);
         close(playerSocketInfo[currId]);
