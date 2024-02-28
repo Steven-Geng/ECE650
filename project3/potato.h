@@ -7,14 +7,17 @@
 class Potato {
 private:
     int hops;
-    std::vector<int> playerTrace;
+    int currHop;
+    int playerTrace[512];
 
 public:
     Potato(int hops_);
     void decreaseHops();
+    void increaseCurrHop();
     void appendPlayerId(int playerId);
+    int getRemainingHop();
     int getCurrHop();
-    const std::vector<int> & getPlayerTrace() const;
+    const int * getPlayerTrace() const;
 };
 
 #endif

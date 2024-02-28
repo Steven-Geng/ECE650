@@ -20,9 +20,7 @@ void Player::connectToRingMaster(){
 
 void Player::recvConnectionInfo(){
     // first, receive current player's ID
-    int playerId;
     recv(socket_fd_master, &playerId, sizeof(playerId), 0);
-
     // then, receive number of players
     int numberOfPlayers;
     recv(socket_fd_master, &numberOfPlayers, sizeof(numberOfPlayers), 0);
@@ -74,30 +72,32 @@ void Player::recvOneInfo(Potato & potato){
     fd_set read_fds;
     FD_ZERO(&read_fds);
     std::vector<int> portsToListen;
+    portsToListen.push_back(socket_fd_master); 
     portsToListen.push_back(socket_fd_left);
     portsToListen.push_back(socket_fd_right);
-    portsToListen.push_back(socket_fd_master);
-    for(int i = 0; i < 3; i++){
+
+    for(size_t i = 0; i < portsToListen.size(); i++){
         FD_SET(portsToListen[i], &read_fds);
     }
     int numfds = std::max(socket_fd_left, std::max(socket_fd_master, socket_fd_right));
-    int status = select(numfds + 1, &read_fds, nullptr, nullptr, nullptr);
+    int status = select(numfds + 1, &read_fds, NULL, NULL, NULL);
     if(status == -1){
         perror("select");
     }
-    for(int i = 0; i < 3; i++){
+    for(size_t i = 0; i < portsToListen.size(); i++){
         if(FD_ISSET(portsToListen[i], &read_fds)){
-            recv(portsToListen[i], &potato, sizeof(potato), 0);
+            //std::cout << "recv from: " << portsToListen[i] << std::endl;
+            recv(portsToListen[i], &potato, sizeof(potato), MSG_WAITALL);
             break;
         }
     }
 }
 
 void Player::doTheGame(Potato & potato){
-    while(1){
+    while(true){
         recvOneInfo(potato);
         // recv endgame msg from master
-        if(potato.getCurrHop() == 0){
+        if(potato.getRemainingHop() == 0){
             close(socket_fd_left);
             close(socket_fd_master);
             close(socket_fd_right);
@@ -105,16 +105,19 @@ void Player::doTheGame(Potato & potato){
             return;
         }
         // recv potato from neighbor
+        //std::cout << "remaining after decreasing: " << potato.getRemainingHop() << std::endl;
         potato.decreaseHops();
         potato.appendPlayerId(playerId);
+        potato.increaseCurrHop();
+        //std::cout << "remaining hops: " << potato.getRemainingHop() << std::endl;
         // this player is the last one
-        if(potato.getCurrHop() == 0){
+        if(potato.getRemainingHop() == 0){
             std::cout << "I'm it" << std::endl;
             send(socket_fd_master, &potato, sizeof(potato), 0);
         }
         // continue pass potato
         else{
-            int randomNeighbor = generateRandomNumber(2, playerId);
+            int randomNeighbor = generateRandomNumber(2, potato.getCurrHop());
             if(randomNeighbor == 0){
                 std::cout << "Sending potato to " << leftPlayerId << std::endl;
                 send(socket_fd_left, &potato, sizeof(potato), 0);

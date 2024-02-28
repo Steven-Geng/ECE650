@@ -1,8 +1,9 @@
 #include "potato.h"
+#include <string.h>
 
 // constructor
-Potato::Potato(int hops_) : hops(hops_) {
-    playerTrace = std::vector<int>();
+Potato::Potato(int hops_) : hops(hops_), currHop(0) {
+    memset(playerTrace, 0, sizeof(playerTrace));
 };
 
 // decrease the number of hops by 1
@@ -10,17 +11,27 @@ void Potato::decreaseHops() {
     hops--;
 }
 
-// append the current playerId to playerTrace
-void Potato::appendPlayerId(int playerId) {
-    playerTrace.push_back(playerId);
+// increase the currHop
+void Potato::increaseCurrHop(){
+    currHop++;
 }
 
-// return the current number of hops
-int Potato::getCurrHop() {
+// add the current playerId to playerTrace
+void Potato::appendPlayerId(int playerId) {
+    playerTrace[currHop] = playerId;
+}
+
+// return the remaining number of hops
+int Potato::getRemainingHop() {
     return hops;
 }
 
+// return the current number of hop
+int Potato::getCurrHop(){
+    return currHop;
+}
+
 // return the whole playerTrace
-const std::vector<int> & Potato::getPlayerTrace() const {
+const int * Potato::getPlayerTrace() const {
     return playerTrace;
 }

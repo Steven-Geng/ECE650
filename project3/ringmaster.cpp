@@ -126,13 +126,13 @@ void RingMaster::waitForPotatoToComeBack(Potato & potato){
             numfds = playerSocketInfo[currId];
         }
     }
-    int status = select(numfds + 1, &read_fds, nullptr, nullptr, nullptr);
+    int status = select(numfds + 1, &read_fds, NULL, NULL, NULL);
     if(status == -1){
         perror("select");
     }
     for(int currId = 0; currId < numberOfPlayers; currId++){
         if(FD_ISSET(playerSocketInfo[currId], &read_fds)){
-            recv(playerSocketInfo[currId], &potato, sizeof(potato), 0);
+            recv(playerSocketInfo[currId], &potato, sizeof(potato), MSG_WAITALL);
             break;
         }
     }
@@ -144,12 +144,13 @@ void RingMaster::endTheGame(Potato & potato){
         send(playerSocketInfo[currId], &potato, sizeof(potato), 0);
         close(playerSocketInfo[currId]);
     }
-    std::vector<int> trace = potato.getPlayerTrace();
-    std::cout << "master can get the trace" << std::endl;
+    const int * trace = potato.getPlayerTrace();
     std::cout << "Trace of potato:" << std::endl;
-    std::cout << trace[0];
-    for(size_t i = 1; i < trace.size(); i++){
-        std::cout << "," << trace[i];
+    if(numberOfHops != 0){
+        std::cout << trace[0];
+        for(int i = 1; i < potato.getCurrHop(); i++){
+            std::cout << "," << trace[i];
+        }
     }
     std::cout << std::endl;
     close(socket_fd);
@@ -162,20 +163,24 @@ int main(int argc, char ** argv){
         exit(-1);
     }
     int numberOfPlayers = std::atoi(argv[2]);
-    int NumberofHops = std::atoi(argv[3]);
-    RingMaster master(argv[1], numberOfPlayers, NumberofHops);
+    int numberofHops = std::atoi(argv[3]);
+    if(numberOfPlayers <= 1){
+        std::cerr << "The number of players must be greater than 1." << std::endl;
+        exit(-1);
+    }
+    if(numberofHops < 0 || numberofHops > 512){
+        std::cerr << "The number of hops must be greater than or equal to zero and less than or equal to 512." << std::endl;
+        exit(-1);
+    }
+    RingMaster master(argv[1], numberOfPlayers, numberofHops);
     master.setupMasterServer();
     master.connectWithPlayers();
     master.sendConnectionInfoToPlayers();
     master.recvPlayersServerPort();
     master.sendServerPortToPlayerNeighbor();
-    
-    Potato potato(NumberofHops);
+    Potato potato(numberofHops);
     master.sendPotatoToRandomPlayer(potato);
     master.waitForPotatoToComeBack(potato);
-    std::vector<int> trace = potato.getPlayerTrace();
-    std::cout << trace[0];
     master.endTheGame(potato);
-
     return 0;
 }
