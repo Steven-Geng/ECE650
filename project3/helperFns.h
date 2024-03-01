@@ -117,9 +117,3 @@ unsigned int acceptConnection(unsigned int socket_fd_self){
     }
     return socket_fd;
 }
-
-int generateRandomNumber(int upperBound, int uniqueVar){
-    srand((unsigned int)time(NULL) + uniqueVar);
-    return rand() % upperBound;
-}
-

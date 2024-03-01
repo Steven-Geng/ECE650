@@ -31,15 +31,16 @@ void Player::connectToRingMaster(){
       playerIpAddr = inet_ntoa(address);
       send(socket_fd_master, playerIpAddr, strlen(playerIpAddr)+1, 0);
     }
-}
-
-void Player::recvConnectionInfo(){
     // first, receive current player's ID
     recv(socket_fd_master, &playerId, sizeof(playerId), 0);
     // then, receive number of players
     int numberOfPlayers;
     recv(socket_fd_master, &numberOfPlayers, sizeof(numberOfPlayers), 0);
+    std::cout << "Connected as player " << playerId << " out of "
+    << numberOfPlayers << " total players" << std::endl;
+}
 
+void Player::recvConnectionInfo(){
     recv(socket_fd_master, &rightPlayerId, sizeof(rightPlayerId), 0);
     recv(socket_fd_master, &leftPlayerId, sizeof(leftPlayerId), 0);
 
@@ -50,11 +51,8 @@ void Player::recvConnectionInfo(){
     //recv(socket_fd_master, &rightPlayerPort, sizeof(rightPlayerPort), 0);
 
     // receive right player's IP address
-    char buffer[512];
+    char buffer[100];
     recv(socket_fd_master, buffer, sizeof(buffer), 0);
-
-    std::cout << "Connected as player " << playerId << " out of "
-    << numberOfPlayers << " total players" << std::endl;
     rightPlayerIp = buffer;
 }
 
@@ -77,7 +75,6 @@ void Player::connectToRightPlayer(){
   std::stringstream ss;
   ss << rightPlayerPort;
   std::string rightPortString = ss.str();
-  //std::string rightPortString = std::to_string(rightPlayerPort);
   const char * rightPort = rightPortString.c_str();
   socket_fd_right = connectToServer(rightPlayerIp.c_str(), rightPort);
 }
@@ -89,33 +86,46 @@ void Player::connectWithLeftPlayer(){
 void Player::recvOneInfo(Potato & potato){
     fd_set read_fds;
     FD_ZERO(&read_fds);
-    std::vector<int> portsToListen;
+    FD_SET(socket_fd_master, &read_fds);
+    FD_SET(socket_fd_left, &read_fds);
+    FD_SET(socket_fd_right, &read_fds);
+    /*std::vector<int> portsToListen;
     portsToListen.push_back(socket_fd_master); 
     portsToListen.push_back(socket_fd_left);
     portsToListen.push_back(socket_fd_right);
 
     for(size_t i = 0; i < portsToListen.size(); i++){
         FD_SET(portsToListen[i], &read_fds);
-    }
+    }*/
     int numfds = std::max(socket_fd_left, std::max(socket_fd_master, socket_fd_right));
     int status = select(numfds + 1, &read_fds, NULL, NULL, NULL);
     if(status == -1){
         perror("select");
     }
-    for(size_t i = 0; i < portsToListen.size(); i++){
+    if(FD_ISSET(socket_fd_master, &read_fds)){
+        recv(socket_fd_master, &potato, sizeof(potato), MSG_WAITALL);
+    }
+    else if(FD_ISSET(socket_fd_left, &read_fds)){
+        recv(socket_fd_left, &potato, sizeof(potato), MSG_WAITALL);
+    }
+    else if(FD_ISSET(socket_fd_right, &read_fds)){
+        recv(socket_fd_right, &potato, sizeof(potato), MSG_WAITALL);
+    }
+    /*for(size_t i = 0; i < portsToListen.size(); i++){
         if(FD_ISSET(portsToListen[i], &read_fds)){
-            std::cout << "recv from: " << portsToListen[i] << std::endl;
+            //std::cout << "recv from: " << portsToListen[i] << std::endl;
             recv(portsToListen[i], &potato, sizeof(potato), MSG_WAITALL);
             break;
         }
-    }
+    }*/
 }
 
 void Player::doTheGame(Potato & potato){
+    srand((unsigned int)time(NULL) + playerId);
     while(true){
         recvOneInfo(potato);
         // recv endgame msg from master
-        if(potato.getRemainingHop() == -1){
+        if(potato.getRemainingHop() == 0){
 	        return;
         }
         // recv potato from neighbor
@@ -132,7 +142,7 @@ void Player::doTheGame(Potato & potato){
         }
         // continue pass potato
         else{
-            int randomNeighbor = generateRandomNumber(2, potato.getCurrHop());
+            int randomNeighbor = rand() % 2;
             //std::cout << "neighbor: " << randomNeighbor << std::endl;
             if(randomNeighbor == 0){
                 std::cout << "Sending potato to " << leftPlayerId << std::endl;

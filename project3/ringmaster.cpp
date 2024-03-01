@@ -31,9 +31,11 @@ void RingMaster::connectWithPlayers(){
         playerSocketInfo.insert(std::make_pair(currId, playerSocket));
         // get player ip address
         char playerIpAddr[INET6_ADDRSTRLEN];
-	recv(playerSocket, &playerIpAddr, sizeof(playerIpAddr), 0);
-	std::string playerIp = playerIpAddr;
+	    recv(playerSocket, &playerIpAddr, sizeof(playerIpAddr), 0);
+	    std::string playerIp = playerIpAddr;
         playerIpInfo.insert(std::make_pair(currId, playerIp));
+        send(playerSocketInfo[currId], &currId, sizeof(currId), 0);//player Id
+        send(playerSocketInfo[currId], &numberOfPlayers, sizeof(numberOfPlayers), 0);
 	/*
         if(socket_addr.ss_family == AF_INET){
             inet_ntop(socket_addr.ss_family, &(((struct sockaddr_in*)&socket_addr)->sin_addr), playerIpAddr, INET6_ADDRSTRLEN);
@@ -70,8 +72,7 @@ void RingMaster::sendConnectionInfoToPlayers(){
             }
         }
         //std::cout << "sending ip information: " << playerIpInfo[rightId] << std::endl;
-        send(playerSocketInfo[currId], &currId, sizeof(currId), 0);//player Id
-        send(playerSocketInfo[currId], &numberOfPlayers, sizeof(numberOfPlayers), 0);
+        
         send(playerSocketInfo[currId], &rightId, sizeof(rightId), 0);
         send(playerSocketInfo[currId], &leftId, sizeof(leftId), 0);
         //send(playerSocketInfo[currId], &playerPortInfo[currId], sizeof(playerPortInfo[currId]), 0);
@@ -104,7 +105,8 @@ void RingMaster::sendServerPortToPlayerNeighbor(){
 }
 
 void RingMaster::sendPotatoToRandomPlayer(Potato & potato){
-    int randomId = generateRandomNumber(numberOfPlayers, numberOfPlayers);
+    srand((unsigned int)time(NULL) + numberOfPlayers);
+    int randomId = rand() % numberOfPlayers;
     std::cout << "Ready to start the game, sending potato to player " << randomId << std::endl;
     send(playerSocketInfo[randomId], &potato, sizeof(potato), 0);
 }
@@ -133,10 +135,8 @@ void RingMaster::waitForPotatoToComeBack(Potato & potato){
 }
 
 void RingMaster::endTheGame(Potato & potato){
-    potato.decreaseHops();
     for(int currId = 0; currId < numberOfPlayers; currId++){
         send(playerSocketInfo[currId], &potato, sizeof(potato), 0);
-        close(playerSocketInfo[currId]);
     }
     const int * trace = potato.getPlayerTrace();
     std::cout << "Trace of potato:" << std::endl;
@@ -147,7 +147,9 @@ void RingMaster::endTheGame(Potato & potato){
         }
     }
     std::cout << std::endl;
-    close(socket_fd);
+    for(int currId = 0; currId < numberOfPlayers; currId++){
+        close(playerSocketInfo[currId]);
+    }
 }
 
 int main(int argc, char ** argv){
