@@ -43,13 +43,6 @@ void Player::connectToRingMaster(){
 void Player::recvConnectionInfo(){
     recv(socket_fd_master, &rightPlayerId, sizeof(rightPlayerId), 0);
     recv(socket_fd_master, &leftPlayerId, sizeof(leftPlayerId), 0);
-
-    // then, receive self port number
-    //recv(socket_fd_master, &selfPort, sizeof(selfPort), 0);
-
-    // receive right player's port number
-    //recv(socket_fd_master, &rightPlayerPort, sizeof(rightPlayerPort), 0);
-
     // receive right player's IP address
     char buffer[100];
     recv(socket_fd_master, buffer, sizeof(buffer), 0);
@@ -89,14 +82,7 @@ void Player::recvOneInfo(Potato & potato){
     FD_SET(socket_fd_master, &read_fds);
     FD_SET(socket_fd_left, &read_fds);
     FD_SET(socket_fd_right, &read_fds);
-    /*std::vector<int> portsToListen;
-    portsToListen.push_back(socket_fd_master); 
-    portsToListen.push_back(socket_fd_left);
-    portsToListen.push_back(socket_fd_right);
-
-    for(size_t i = 0; i < portsToListen.size(); i++){
-        FD_SET(portsToListen[i], &read_fds);
-    }*/
+    
     int numfds = std::max(socket_fd_left, std::max(socket_fd_master, socket_fd_right));
     int status = select(numfds + 1, &read_fds, NULL, NULL, NULL);
     if(status == -1){
@@ -111,13 +97,6 @@ void Player::recvOneInfo(Potato & potato){
     else if(FD_ISSET(socket_fd_right, &read_fds)){
         recv(socket_fd_right, &potato, sizeof(potato), MSG_WAITALL);
     }
-    /*for(size_t i = 0; i < portsToListen.size(); i++){
-        if(FD_ISSET(portsToListen[i], &read_fds)){
-            //std::cout << "recv from: " << portsToListen[i] << std::endl;
-            recv(portsToListen[i], &potato, sizeof(potato), MSG_WAITALL);
-            break;
-        }
-    }*/
 }
 
 void Player::doTheGame(Potato & potato){
