@@ -101,15 +101,16 @@ int main (int argc, char *argv[])
   string first_name, last_name;
   int player_id, team_id, uniform_num, mpg, ppg, rpg, apg;
   double spg, bpg;
+  // add player entries 
   ifstream player("player.txt");
   while(getline(player, line)){
     stringstream ss;
     ss << line;
     ss >> player_id >> team_id >> uniform_num >> first_name >> last_name >> mpg >> ppg >> rpg >> apg >> spg >> bpg;
-	  add_player(C, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg);
+    add_player(C, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg);
   }
   player.close();
-
+  // add team entries
   string name;
   int state_id, color_id, wins, losses;
   ifstream team("team.txt");
@@ -117,19 +118,19 @@ int main (int argc, char *argv[])
     stringstream ss;
     ss << line;
     ss >> team_id >> name >> state_id >> color_id >> wins >> losses;
-	  add_team(C, name, state_id, color_id, wins, losses);
+    add_team(C, name, state_id, color_id, wins, losses);
   }
   team.close();
-
+  // add state entries
   ifstream state("state.txt");
-  while(getline(team, line)){
+  while(getline(state, line)){
     stringstream ss;
     ss << line;
     ss >> state_id >> name;
     add_state(C, name);
   }
   state.close();
-
+  // add color entries
   ifstream color("color.txt");
   while(getline(color, line)){
     stringstream ss;
@@ -140,8 +141,7 @@ int main (int argc, char *argv[])
   color.close();
   
   exercise(C);
-
-
+  
   //Close database connection
   C->disconnect();
 

@@ -157,40 +157,40 @@ void query2(connection *C, string team_color){
 }
 
 void query3(connection *C, string team_name){
-    nontransaction q3(*C);
-    string sql;
-    sql = "SELECT PLAYER.FIRST_NAME, PLAYER.LAST_NAME FROM TEAM, PLAYER WHERE TEAM.NAME = '" + team_name + "' AND TEAM.TEAM_ID = PLAYER.TEAM_ID ORDER BY PPG DESC";
-    result res = q3.exec(sql);
-    cout << "NAME" << endl;
-    for (result::const_iterator row = res.begin(); row != res.end(); ++row) {
-        cout << row[0].as<string>() << " " << row[1].as<string>() << endl;
-    }
-
-    q3.commit();
+  nontransaction q3(*C);
+  string sql;
+  sql = "SELECT PLAYER.FIRST_NAME, PLAYER.LAST_NAME FROM TEAM, PLAYER WHERE TEAM.NAME = '" + team_name + "' AND TEAM.TEAM_ID = PLAYER.TEAM_ID ORDER BY PPG DESC";
+  result res = q3.exec(sql);
+  cout << "FIRST_NAME LAST_NAME" << endl;
+  for (result::const_iterator row = res.begin(); row != res.end(); ++row) {
+    cout << row[0].as<string>() << " " << row[1].as<string>() << endl;
+  }
+  
+  q3.commit();
 }
 
 void query4(connection *C, string team_state, string team_color){
-    nontransaction q4(*C);
-    string sql;
-    sql = "SELECT PLAYER.UNIFORM_NUM, PLAYER.FIRST_NAME, PLAYER.LAST_NAME FROM TEAM, PLAYER, COLOR, STATE WHERE STATE.NAME = '" + team_state + "' AND COLOR.NAME = '" + team_color + "' AND TEAM.STATE_ID = STATE.STATE_ID AND TEAM.COLOR_ID = COLOR.COLOR_ID AND PLAYER.TEAM_ID = TEAM.TEAM_ID";
-    result res = q4.exec(sql);
-    cout << "NAME" << endl;
-    for (result::const_iterator row = res.begin(); row != res.end(); ++row) {
-        cout << row[0].as<int>() << " " << row[1].as<string>() << " " << row[2].as<string>() << endl;
-    }
-
-    q4.commit();
+  nontransaction q4(*C);
+  string sql;
+  sql = "SELECT PLAYER.UNIFORM_NUM, PLAYER.FIRST_NAME, PLAYER.LAST_NAME FROM PLAYER, TEAM, STATE, COLOR WHERE STATE.NAME = '" + team_state + "' AND COLOR.NAME = '" + team_color + "' AND TEAM.STATE_ID = STATE.STATE_ID AND TEAM.COLOR_ID = COLOR.COLOR_ID AND PLAYER.TEAM_ID = TEAM.TEAM_ID";
+  result res = q4.exec(sql);
+  cout << "UNIFORM_NUM FIRST_NAME LAST_NAME" << endl;
+  for (result::const_iterator row = res.begin(); row != res.end(); ++row) {
+    cout << row[0].as<int>() << " " << row[1].as<string>() << " " << row[2].as<string>() << endl;
+  }
+  
+  q4.commit();
 }
 
 void query5(connection *C, int num_wins){
-    nontransaction q5(*C);
-    string sql;
-    sql = "SELECT PLAYER.FIRST_NAME, PLAYER.LAST_NAME, TEAM.NAME, TEAM.WINS FROM TEAM, PLAYER WHERE TEAM.WINS > '" + to_string(num_wins) + "' AND TEAM.TEAM_ID = PLAYER.TEAM_ID";
-    result res = q5.exec(sql);
-    cout << "FIRST_NAME LAST_NAME NAME WINS" << endl;
-    for (result::const_iterator row = res.begin(); row != res.end(); ++row) {
-        cout << row[0].as<string>() << " " << row[1].as<string>() << " " << row[2].as<string>() << " " << row[3].as<int>() << endl;
-    }
+  nontransaction q5(*C);
+  string sql;
+  sql = "SELECT PLAYER.FIRST_NAME, PLAYER.LAST_NAME, TEAM.NAME, TEAM.WINS FROM TEAM, PLAYER WHERE TEAM.WINS > '" + to_string(num_wins) + "' AND TEAM.TEAM_ID = PLAYER.TEAM_ID";
+  result res = q5.exec(sql);
+  cout << "FIRST_NAME LAST_NAME NAME WINS" << endl;
+  for (result::const_iterator row = res.begin(); row != res.end(); ++row) {
+    cout << row[0].as<string>() << " " << row[1].as<string>() << " " << row[2].as<string>() << " " << row[3].as<int>() << endl;
+  }
 
-    q5.commit();
+  q5.commit();
 }
