@@ -27,11 +27,11 @@ def add_color(session, color_id, name):
     session.commit()
 
 def load_data_from_txt(session):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    directory = os.path.dirname(os.path.abspath(__file__))
     files = ['player.txt', 'team.txt', 'state.txt', 'color.txt']
 
     for file_name in files:
-        with open(os.path.join(base_dir, file_name), 'r') as file:
+        with open(os.path.join(directory, file_name), 'r') as file:
             lines = file.readlines()
             for line in lines:
                 data = line.strip().split(' ')

@@ -6,8 +6,6 @@ from models import Base
 from models import Player, Team, State, Color
 from exerciser import *
 
-import csv
-
 
 engine = create_engine('postgresql://postgres:passw0rd@localhost/ACC_BBALL')
 Session = sessionmaker(bind=engine)
@@ -23,7 +21,6 @@ def main():
     load_data_from_txt(session)
 
     session.commit()
-
     exercise(session)
     session.close()
 
